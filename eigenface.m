@@ -4,17 +4,16 @@ close all;
 
 person = struct('faces', {});
 
-SUBJECTS = 10; %number of people
+SUBJECTS = 20; %number of people
 DATADIR = '/temp/cvproject/data/orl';
 %DATADIR = '/temp/cvproject/org/att/orl_faces';
 FRACTION = .4; %fraction of eigen vectors to use
-total = 0;
+totaltrain = 0;
+totalall = 0;
 row = 0;
 col = 0;
 
-
 trainsize = 8;
-
 
 %read data
 for i=1:SUBJECTS
@@ -27,34 +26,39 @@ for i=1:SUBJECTS
             im = imread(fullfile(DATADIR, ['s' num2str(i)], files(j).name) );
             count = count +1;
             [row col] = size(im);
+            if (row == 0 || col == 0)
+                disp('error processing input images');
+                return;
+            end
             faces{count} = im;
             %imshow(im);
             %pause();
-            total = total + 1;
+            totalall = totalall + 1;
         end
     end
-    %store this persons all faces
+    %store this person's all faces
     person(i).faces = faces;
 end
-
-disp(['total face images : ' num2str(total)]);
+disp(['total all face images : ' num2str(totalall)]);
 
 %verify
-for i=1:SUBJECTS
-    for j=1:size(person(i).faces, 1)
-        %imshow(cell2mat(person(i).faces(j)));
-        %pause();
-    end
-end
+% for i=1:SUBJECTS
+%     for j=1:size(person(i).faces, 1)
+%         imshow(cell2mat(person(i).faces(j)));
+%         pause();
+%     end
+% end
 
 %% start eigenface computation
 %append the images in columns of a matrix A
 images = []; 
+
 for i=1:SUBJECTS
     for j=1:trainsize
         face = cell2mat(person(i).faces(j));
         facecol = reshape(face, [], 1);
         images = [images facecol];
+        totaltrain = totaltrain + 1;
     end
 end
 %
@@ -68,8 +72,9 @@ for i=1:size(images,2)
     A(:, i) = images(:,i) - meanimage;
 end
 %covariance matrix
-X = A * A';
+%X = A * A';
 % PCA of this covariance is computationally expensive, so workaround
+%Y = 1/(SUBJECTS * trainsize) * A' * A;
 Y = A' * A;
 whos images meanimage subtractedmean X Y
 % after finding eigen vector of Y, eigen vector of X = subtractedmean * V
@@ -109,18 +114,63 @@ figure
 imshow(uint8(reshape(meanimage, row, col)));
 title('Mean image');
 
-%% Find weight of projection of training images on each of the eigenvectors
-w = eigenfaces(:, i)' * A;
-%only take subset of these weights
-w = w(1:vectorsize);
-
+%% Find weight (coordinate) of projection of training images on each of the eigenvectors
+%wtrain = zeros(vectorsize, totaltrain);
+wtrain = eigenfacestouse' * A;
 %% Testing
 figure;
+testimagenumber = 0;
+error = 0;
 for i=1:SUBJECTS
-    for j=trainsize:size(person(i).faces, 1)
-        imshow(cell2mat(person(i).faces(j))); pause();
+    for j=trainsize+1:length(person(i).faces)
+        testimagenumber = testimagenumber + 1;
+        testim = cell2mat(person(i).faces(j));
+        %imshow(im); pause();
+        
+        %subtract mean image
+        testimdouble = double(testim) - reshape(meanimage, row, col);
+        %imshow(uint8(im));
+        %pause();
+        
+        %project mean subtracted image into the face space, 
+        %calculate weight i.e. coordinate acc to new basis vectors
+        testimvector = reshape(testimdouble, [], 1);
+        wtest = eigenfacestouse' * testimvector;
+        
+        distanceToTrain = zeros(totaltrain, 1);
+        %find distance between this test image and training images
+        for k=1:totaltrain
+            distanceToTrain(k) = norm(wtrain(:,k) - wtest, 2);
+        end
+        [tr index] = sort(distanceToTrain);
+        disp(['matched image' num2str(index(1))]);
+        idPersonPredicted = floor((index(1) - 1) / trainsize) + 1;
+        disp(['matched image id ' num2str(idPersonPredicted)]);
+        
+        if( i ~= idPersonPredicted)
+            error = error + 1;
+        end
+        %display
+        subplot(1,4,1);
+        imshow(testim)
+        title('test image');
+        firstmatch = uint8(reshape(images(:,index(1)), row, col));
+        secondmatch = uint8(reshape(images(:,index(2)), row, col));
+        thirdmatch = uint8(reshape(images(:,index(3)), row, col));
+        subplot(1,4,2);
+        imshow(firstmatch);
+        title('first match');
+        subplot(1,4,3);
+        imshow(secondmatch);
+        title('second match');
+        subplot(1,4,4);
+        imshow(thirdmatch);
+        title('third match');
+        pause();
     end
 end
+disp(['error : ' num2str(error/testimagenumber * 100)]);
+close all
 
 
 
