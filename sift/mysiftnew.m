@@ -55,13 +55,15 @@ function mysift()
 end
 
 function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, loc2)
+    [height width] = size(test_image);
+    maxdist = sqrt(height^2 + width^2);
+    
     distRatio = 0.6;
     desc2T = desc2';
     for k = 1:size(desc1, 1)
        dotprods = desc1(k,:) * desc2T;
        [vals,indx] = sort(acos(dotprods));  % Take inverse cosine and sort results
        % Check if nearest neighbor has angle less than distRatio times 2nd.
-       vals(1)/vals(2)
        if (vals(1) < distRatio * vals(2))
           match(k) = indx(1);
        else
