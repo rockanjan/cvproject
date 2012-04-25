@@ -4,7 +4,7 @@ close all;
 
 %load
 load person
-FRACTION = .05; %fraction of eigen vectors to use
+FRACTION = 1; %fraction of eigen vectors to use
 
 %% cross validation
 tic
