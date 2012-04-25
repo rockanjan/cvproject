@@ -2,52 +2,9 @@
 clear;
 close all;
 
-person = struct('faces', {});
-
-SUBJECTS = 20; %number of people
-DATADIR = '/temp/cvproject/data/orl';
-%DATADIR = '/temp/cvproject/org/att/orl_faces';
+load person
 FRACTION = .4; %fraction of eigen vectors to use
-totaltrain = 0;
-totalall = 0;
-row = 0;
-col = 0;
 
-trainsize = 8;
-
-%read data
-for i=1:SUBJECTS
-    files =  dir(fullfile(DATADIR, ['s' num2str(i)], '*'));
-    faces = {};
-    count = 0;
-    for j=1:size(files,1)
-        if( ~ ( strcmp(files(j).name, '.') || strcmp(files(j).name, '..') || strcmp(files(j).isdir, '1') ) )
-            %files(j).name
-            im = imread(fullfile(DATADIR, ['s' num2str(i)], files(j).name) );
-            count = count +1;
-            [row col] = size(im);
-            if (row == 0 || col == 0)
-                disp('error processing input images');
-                return;
-            end
-            faces{count} = im;
-            %imshow(im);
-            %pause();
-            totalall = totalall + 1;
-        end
-    end
-    %store this person's all faces
-    person(i).faces = faces;
-end
-disp(['total all face images : ' num2str(totalall)]);
-
-%verify
-% for i=1:SUBJECTS
-%     for j=1:size(person(i).faces, 1)
-%         imshow(cell2mat(person(i).faces(j)));
-%         pause();
-%     end
-% end
 
 %% start eigenface computation
 %append the images in columns of a matrix A

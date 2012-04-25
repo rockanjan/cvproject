@@ -4,12 +4,11 @@ function mysift()
     
     %all variables used here will be available after loading the saved file
     %with descriptors
-    
+    SUBJECTS = 20;
     load descriptor
     tic
     figure;
     subplot(1, 2, 1);
-    
     %{
     figure
     %%almost similar pair of images
@@ -20,10 +19,10 @@ function mysift()
     imshow(cell2mat(person(5).faces(1)) - cell2mat(person(5).faces(5)));
     pause();
     %}
-    distRatio = 0.2;
+    distRatio = 0.8;
     final_overall_correct = 0;
     final_overall_total = 0;
-    for distRatio = 1:1    
+    for distRatio = 0.8:0.8
         final_cv_correct = 0;
         final_cv_total = 0;
         for folditer = [2 5 10]  
@@ -138,18 +137,18 @@ function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, l
        [vals,indx] = sort(acos(dotprods));  % Take inverse cosine and sort results
        % Check if nearest neighbor has angle less than distRatio times 2nd.
        %vals(1)/vals(2)
+       match(k) = 0;
        if (vals(1) < distRatio * vals(2))
+          %if distance within some radius, then only match
           match(k) = indx(1);
-       else
-          match(k) = 0;
        end
     end
     matches = sum(match > 0);
-    
     % Create a new image showing the two images side by side.
     im3 = appendimages(test_image,train_image);
-    %{
+    
     % Show a figure with lines joining the accepted matches.
+    %{
     if (matches > 0)
         figure('Position', [100 100 size(im3,2) size(im3,1)]);
         colormap('gray');
