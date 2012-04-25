@@ -17,7 +17,7 @@ all_size = train_size + fold_size;
 disp(['folds ' num2str(fold)]);
 final_total_count = 0;
 final_correct_count = 0;
-for thisfold=1:fold
+for thisfold=1:fold %fold times
     test_start = (thisfold-1) * fold_size + 1;
     test_end = test_start + fold_size - 1;
     train_start1 = 1;
@@ -43,7 +43,7 @@ for thisfold=1:fold
             images = [images facecol];
         end
     end
-    disp(['images array size = ' num2str(size(images))]);
+    %disp(['images array size = ' num2str(size(images))]);
     images = double(images);
     % find mean
     meanimage = mean(images, 2); %mean in column DIM
@@ -134,15 +134,17 @@ for thisfold=1:fold
                 end
             end
             size(index);
-            pause();
-            disp(['index= ' num2str(index(1)) ' subj_id = ' num2str(idPersonPredicted) ' image_id = ' num2str(image_id)]); 
-            disp(['matched image id ' num2str(image_id)]);
-            disp(['matched person id ' num2str(idPersonPredicted)]);
+            %pause();
+            %disp(['index= ' num2str(index(1)) ' subj_id = ' num2str(idPersonPredicted) ' image_id = ' num2str(image_id)]); 
+            %disp(['matched image id ' num2str(image_id)]);
+            %disp(['matched person id ' num2str(idPersonPredicted)]);
 
             if( i ~= idPersonPredicted)
+                disp('error');
                 error = error + 1;
             end
             %display
+            %{
             subplot(1,4,1);
             imshow(testim)
             title('test image');
@@ -159,9 +161,10 @@ for thisfold=1:fold
             imshow(thirdmatch);
             title('third match');
             pause();
+            %}
         end
     end
-    disp(['error : ' num2str(error/testimagenumber * 100)]);
+    disp(['error percent : ' num2str(error/testimagenumber * 100)]);
     close all
     final_total_count = final_total_count + testimagenumber;
     final_correct_count = final_correct_count + (testimagenumber - error);
