@@ -22,7 +22,7 @@ function mysift()
     distRatio = 0.8;
     final_overall_correct = 0;
     final_overall_total = 0;
-    for distRatio = 0.8:0.8
+    for distRatio = 0.4:0.8
         final_cv_correct = 0;
         final_cv_total = 0;
         for folditer = [2 5 10]  

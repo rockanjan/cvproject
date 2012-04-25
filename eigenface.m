@@ -5,7 +5,7 @@ close all;
 load person
 FRACTION = .4; %fraction of eigen vectors to use
 
-
+trainsize = 8;
 %% start eigenface computation
 %append the images in columns of a matrix A
 images = []; 

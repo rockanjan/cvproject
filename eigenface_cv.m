@@ -92,10 +92,16 @@ for folditer = [2 5 10]
             %imshow(reshape(eigenfaces(:,i) ./ (max(eigenfaces(:,i))) , row, col));
         end
         suptitle('Eigenfaces');
+        pause();
+        %}
+        
+        %{
         figure
         imshow(uint8(reshape(meanimage, row, col)));
         title('Mean image');
+        pause();
         %}
+        
         % Find weight (coordinate) of projection of training images on each of the eigenvectors
         %wtrain = zeros(vectorsize, total_train);
         wtrain = eigenfacestouse' * A;
