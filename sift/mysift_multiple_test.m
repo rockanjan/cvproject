@@ -4,8 +4,8 @@ function mysift()
     
     %all variables used here will be available after loading the saved file
     %with descriptors
-    SUBJECTS = 20;
-    load descriptor
+    %SUBJECTS = 20;
+    load descriptor_ioe
     tic
     figure;
     subplot(1, 2, 1);
@@ -22,10 +22,11 @@ function mysift()
     distRatio = 0.8;
     final_overall_correct = 0;
     final_overall_total = 0;
-    for distRatio = 0.4:0.8
+    %for distRatio = 0.2:0.2:0.8
+    for distRatio = 0.8:0.8
         final_cv_correct = 0;
         final_cv_total = 0;
-        for folditer = [2 5 10]  
+        for folditer = [10]  
             tic
             fold = folditer;
             crossvalidation_correct_count = 0;
@@ -158,7 +159,7 @@ function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, l
         for i = 1: size(desc1,1)
           if (match(i) > 0)
             line([loc1(i,2) loc2(match(i),2)+cols1], ...
-                 [loc1(i,1) loc2(match(i),1)], 'Color', 'c');
+                 [loc1(i,1) loc2(match(i),1)], 'Color', 'g');
           end
         end
         hold off;

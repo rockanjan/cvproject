@@ -3,14 +3,19 @@ clear;
 close all;
 
 %load
-load person
-FRACTION = 1; %fraction of eigen vectors to use
+%load person_orl_histeq
+%load person_orl
+%load person_lfw
+load person_ioe_histeq
+
+
+FRACTION = .4; %fraction of eigen vectors to use
 
 %% cross validation
 tic
 overall_total_count = 0;
 overall_correct_count = 0;
-for folditer = [2 5 10]
+for folditer = [10]
     disp(['fold = ' num2str(folditer)]);
     fold = folditer;
     fold_size = length(person(1).faces) / fold;
@@ -77,6 +82,7 @@ for folditer = [2 5 10]
         ylabel('Eigenvalues');
         %}
         vectorsize = ceil( FRACTION * length(lambda_values) );
+        %eigenfacestouse = eigenfaces(:,1:vectorsize);
         eigenfacestouse = eigenfaces(:,1:vectorsize);
 
         % plot eigenfaces and mean image
@@ -179,8 +185,8 @@ for folditer = [2 5 10]
         fold_iter_correct_count = fold_iter_correct_count + correct;
     end
     overall_total_count = overall_total_count + fold_iter_total_count;
-    overall_correct_count = overall_correct_count + fold_iter_total_count;
+    overall_correct_count = overall_correct_count + fold_iter_correct_count;
 end
-disp(['overall final accuracy : ' num2str(fold_iter_correct_count/fold_iter_total_count * 100)]);
+disp(['overall final accuracy : ' num2str(overall_correct_count/overall_total_count * 100)]);
 
 

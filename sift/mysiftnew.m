@@ -10,6 +10,8 @@ function mysift()
     subplot(1, 2, 1);
     total_count = 0;
     correct_count = 0;
+    trainsize=8;
+    teststart=trainsize+1;
     for i=1:SUBJECTS
         for j= teststart : length(person(i).faces)
             total_count = total_count + 1;
