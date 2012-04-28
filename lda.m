@@ -1,227 +1,175 @@
-% performs lda based recognition
+% performs eigenface based recognition
 clear;
 close all;
 
-%load
-%load person
-load person_orl
-FRACTION = .4; %fraction of eigen vectors to use
+load person_orl_40
+%load person_orl_40
+trainsize = 5;
+final_correct = 0;
+final_total = 0;
+for iter = 1:50
+    %randomize the images
+    for i=1:SUBJECTS
+        faces = person(i).faces;
+        beforerand = cell2mat(person(i).faces(1));
+        randvalues = rand(1, length(faces));
+        [rval rind] = sort(randvalues);
+        person(i).faces = faces(rind);
+        afterrand = cell2mat(person(i).faces(1));
+    end
+    %% start eigenface computation
+    %append the images in columns of a matrix A
+    images = []; 
+    totaltrain=0;
+    for i=1:SUBJECTS
+        for j=1:trainsize
+            face = cell2mat(person(i).faces(j));
+            facecol = reshape(face, [], 1);
+            images = [images facecol];
+            totaltrain = totaltrain + 1;
+        end
+    end
+    %
+    images = double(images);
 
-%% cross validation
-tic
-overall_total_count = 0;
-overall_correct_count = 0;
-%for folditer = [2 5 10]
-for folditer = [5]
-    disp(['fold = ' num2str(folditer)]);
-    fold = folditer;
-    fold_size = length(person(1).faces) / fold;
-    train_size = (fold-1) * fold_size;
-    total_train = train_size * SUBJECTS;
-    all_size = train_size + fold_size;
-    fold_iter_total_count = 0;
-    fold_iter_correct_count = 0;
-    for thisfold=1:fold %fold times
-        test_start = (thisfold-1) * fold_size + 1;
-        test_end = test_start + fold_size - 1;
-        train_start1 = 1;
-        train_end1 = test_start - 1;
-        train_start2 = test_end + 1;
-        train_end2 = length(person(1).faces);
-        disp(['teststart testend trainstart1 trainend1 trainstart2 trainend2 = ' num2str([test_start test_end train_start1 train_end1 train_start2 train_end2])]);
-        % start eigenface computation
-        %append the images in columns of a matrix A
-        clear images;
-        images = [];
-        for i=1:SUBJECTS
-            for j=train_start1:train_end1
-                face = cell2mat(person(i).faces(j));
-                facecol = reshape(face, [], 1);
-                images = [images facecol];
+    % find mean
+    meanimage = mean(images, 2); %mean in column DIM
+    %subtract mean image
+    A = zeros(size(images)); % A = mean subtracted image
+    for i=1:size(images,2)
+        A(:, i) = images(:,i) - meanimage;
+    end
+    Y = A' * A;
+    [V, lambda] = eig(Y);
+    images = double(images);
+    eigenfaces = A * V; %eigenvectors
+    for i=1:size(lambda,1)
+        lambda_values(i) = lambda(i,i);
+    end
+    %sort the vectors according to eigenvalues
+    [tr index] = sort(lambda_values, 'descend');
+    eigenfaces = eigenfaces(:, index);
+    lambda_values = lambda_values(index);
+    eigenfacestouse = eigenfaces(:, 1: (totaltrain - SUBJECTS));
+
+    %% project in eigen space (coordinates for the images in new space)
+    images_eigen_space = eigenfacestouse' * A;
+
+    %A_pca has the images projected in new space (in each column)
+    %find overall mean
+    mean_eigen_space = mean(images_eigen_space, 2);
+    %find class specific mean images
+    class_mean_eigen_space = zeros(size(mean_eigen_space, 1), SUBJECTS);
+    for i=1:SUBJECTS
+        start = (i-1) * trainsize + 1;
+        col_span = start : (start+trainsize-1);
+        class_mean_eigen_space(:, i) = mean(images_eigen_space(:, col_span), 2);
+    end
+    
+    %% compute total, between and within scatter matrices (S, Sb, Sw)
+    A_eigen_space = images_eigen_space - repmat(mean_eigen_space, 1, totaltrain);
+    S = A_eigen_space * A_eigen_space';
+    Sb = zeros(size(S));
+    Sw = zeros(size(S));
+
+    %between
+    for i=1:SUBJECTS
+        a = (class_mean_eigen_space(:, i) - mean_eigen_space);
+        Sb = Sb +  trainsize * a * a';
+    end
+
+    %within
+    img_index = 0;
+    for i=1:SUBJECTS
+        class_sigma = zeros(size(S));
+        for j=1:trainsize
+            img_index = img_index + 1;
+            a = (images_eigen_space(:, img_index) - class_mean_eigen_space(:, i));
+            class_sigma = class_sigma +  a * a';
+        end
+        Sw = Sw + class_sigma;
+    end
+
+
+    %% optimization
+%    [fisher_vec, fisher_lambda] = eig(Sb/Sw); % Cost function J = inv(Sw) * Sb
+    [fisher_vec, fisher_lambda] = eig(Sb, Sw);
+    fisher_lambda_values = zeros(1, size(fisher_lambda, 2));
+    for i=1:size(fisher_lambda,1)
+        fisher_lambda_values(i) = fisher_lambda(i,i);
+    end
+    %sort the vectors according to eigenvalues
+    [tr index] = sort(fisher_lambda_values, 'descend');
+    fisher_all_faces = fisher_vec(:, index);
+    fisher_lambda_values = fisher_lambda_values(index);
+    
+    %{
+    figure
+    plot(1:10, fisher_lambda_values(1:10));
+    xlabel('Fishervalue index');
+    ylabel('Fishervalues');
+    pause() 
+    %}
+    
+    %only take SUBJECTS - 1 fisher vectors
+    fisher_faces = fisher_all_faces(:, 1: (SUBJECTS-1) );
+
+    fisher_training_projected  = fisher_faces' * images_eigen_space;
+
+    %% Testing
+    %required: 
+    %mean in original space
+    %eigenfaces and fisherfaces (eigen vector and fisher vectors)
+    %projected images in the fisher face space (for comparison)
+
+    testimagenumber = 0;
+    correct = 0;
+    for i=1:SUBJECTS
+        for j=trainsize+1:length(person(i).faces)
+            testimagenumber = testimagenumber + 1;
+            testim = cell2mat(person(i).faces(j));
+            %subtract mean image
+            testimdouble = double(testim) - reshape(meanimage, row, col);
+            
+            testimvector = reshape(testimdouble, [], 1);
+
+            fisher_im_projected = fisher_faces' * eigenfacestouse' * testimvector; % Test image feature vector
+
+            distanceToTrain = zeros(totaltrain, 1);
+            %find distance between this test image and training images
+            for k=1:totaltrain
+                distanceToTrain(k) = norm(fisher_training_projected(:,k) - fisher_im_projected, 2);
             end
-            for j=train_start2:train_end2
-                face = cell2mat(person(i).faces(j));
-                facecol = reshape(face, [], 1);
-                images = [images facecol];
+
+            [tr index] = sort(distanceToTrain);
+            idPersonPredicted = floor((index(1) - 1) / trainsize) + 1;
+            if( i == idPersonPredicted)
+                correct = correct + 1;
             end
+            %display
+            %{
+            subplot(1,4,1);
+            imshow(testim)
+            title('test image');
+            firstmatch = uint8(reshape(images(:,index(1)), row, col));
+            secondmatch = uint8(reshape(images(:,index(2)), row, col));
+            thirdmatch = uint8(reshape(images(:,index(3)), row, col));
+            subplot(1,4,2);
+            imshow(firstmatch);
+            title('first match');
+            subplot(1,4,3);
+            imshow(secondmatch);
+            title('second match');
+            subplot(1,4,4);
+            imshow(thirdmatch);
+            title('third match');
+            %pause();
+            %}
         end
-        %disp(['images array size = ' num2str(size(images))]);
-        images = double(images);
-        % find mean
-        meanimage = mean(images, 2); %mean in column DIM
-        %subtract mean image
-        A = zeros(size(images)); % A = mean subtracted image
-        for i=1:size(images,2)
-            A(:, i) = images(:,i) - meanimage;
-        end
-        %covariance matrix
-        %X = A * A';
-        % PCA of this covariance is computationally expensive, so workaround
-        %Y = 1/(SUBJECTS * train_size) * A' * A;
-        Y = A' * A;
-        %whos images meanimage subtractedmean X Y
-        % after finding eigen vector of Y, eigen vector of X = subtractedmean * V
-        % eigen values are the same
-        [V, lambda] = eig(Y);
-        eigenfaces = A * V; %eigenvectors
-        clear lambda_values;
-        for i=1:size(lambda,1)
-            lambda_values(i) = lambda(i,i);
-        end
-        %sort the vectors according to eigenvalues
-        [tr index] = sort(lambda_values, 2, 'descend');
-        eigenfaces = eigenfaces(:, index);
-        lambda_values = lambda_values(index);
-        %{
-        figure
-        plot(1:length(lambda_values), lambda_values);
-        xlabel('Eigenvalue index');
-        ylabel('Eigenvalues');
-        %}
-        vectorsize = ceil( FRACTION * length(lambda_values) );
-        eigenfacestouse = eigenfaces(:,1:vectorsize);
-
-        % plot eigenfaces and mean image
-        %{
-        figure
-        colormap('gray');
-        
-        for i=1:10
-            subplot(2,5,i)
-            %vector normalized, reshape to image
-            imagesc(reshape(eigenfaces(:,i) ./ norm(eigenfaces(:,i)), row, col));
-            axis off
-            %imshow(reshape(eigenfaces(:,i) ./ (max(eigenfaces(:,i))) , row, col));
-        end
-        suptitle('Eigenfaces');
-        pause();
-        %}
-        
-        %{
-        figure
-        imshow(uint8(reshape(meanimage, row, col)));
-        title('Mean image');
-        pause();
-        %}
-        
-        % Find weight (coordinate) of projection of training images on each of the eigenvectors
-        %wtrain = zeros(vectorsize, total_train);
-        wtrain = eigenfacestouse' * A;
-        % Testing
-        %figure;
-        testimagenumber = 0;
-        correct = 0;
-        for i=1:SUBJECTS
-            for j=test_start:test_end
-                testimagenumber = testimagenumber + 1;
-                testim = cell2mat(person(i).faces(j));
-                %imshow(im); pause();
-
-                %subtract mean image
-                testimdouble = double(testim) - reshape(meanimage, row, col);
-                %imshow(uint8(im));
-                %pause();
-
-                %project mean subtracted image into the face space, 
-                %calculate weight i.e. coordinate acc to new basis vectors
-                testimvector = reshape(testimdouble, [], 1);
-                wtest = eigenfacestouse' * testimvector;
-
-                distanceToTrain = zeros(total_train, 1);
-                %find distance between this test image and training images
-                for k=1:total_train
-                    distanceToTrain(k) = norm(wtrain(:,k) - wtest, 2);
-                end
-
-                [tr index] = sort(distanceToTrain);
-                %manage image offset due to cross validation
-                %TODO: Check
-                idPersonPredicted = floor((index(1) - 1) / train_size) + 1;
-                image_id = mod( index(1), train_size);
-                if(image_id == 0)
-                    image_id = train_end2;
-                else
-                    if(image_id >= test_start)
-                        image_id = image_id + fold_size;
-                    end
-                end
-                size(index);
-                %pause();
-                %disp(['index= ' num2str(index(1)) ' subj_id = ' num2str(idPersonPredicted) ' image_id = ' num2str(image_id)]); 
-                %disp(['matched image id ' num2str(image_id)]);
-                %disp(['matched person id ' num2str(idPersonPredicted)]);
-
-                if( i == idPersonPredicted)
-                    correct = correct + 1;
-                end
-                %display
-                %{
-                subplot(1,4,1);
-                imshow(testim)
-                title('test image');
-                firstmatch = uint8(reshape(images(:,index(1)), row, col));
-                secondmatch = uint8(reshape(images(:,index(2)), row, col));
-                thirdmatch = uint8(reshape(images(:,index(3)), row, col));
-                subplot(1,4,2);
-                imshow(firstmatch);
-                title('first match');
-                subplot(1,4,3);
-                imshow(secondmatch);
-                title('second match');
-                subplot(1,4,4);
-                imshow(thirdmatch);
-                title('third match');
-                pause();
-                %}
-            end
-        end
-        disp(['correct percent : ' num2str(correct/testimagenumber * 100)]);
-        close all
-        fold_iter_total_count = fold_iter_total_count + testimagenumber;
-        fold_iter_correct_count = fold_iter_correct_count + correct;
     end
-    overall_total_count = overall_total_count + fold_iter_total_count;
-    overall_correct_count = overall_correct_count + fold_iter_total_count;
+    final_total = final_total + testimagenumber;
+    final_correct = final_correct + correct;
+    disp(['correct % : ' num2str(correct/testimagenumber * 100)]);
+    close all
 end
-disp(['overall final accuracy : ' num2str(fold_iter_correct_count/fold_iter_total_count * 100)]);
-
-
-%% compute class means
-classmean = zeros(row * col, SUBJECTS);
-for i=1:SUBJECTS
-    sum = zeros(row * col, 1);
-    for j=1:size(person(i).faces, 2)
-        sum = sum + double(reshape(cell2mat(person(i).faces(j)), [], 1));
-    end
-    sum = sum / trainsize;
-    classmean(:,i) = sum;
-end
-
-%% compute overall mean
-images = []; 
-for i=1:SUBJECTS
-    for j=1:trainsize
-        face = cell2mat(person(i).faces(j));
-        facecol = reshape(face, [], 1);
-        images = [images facecol];
-        totaltrain = totaltrain + 1;
-    end
-end
-%
-images = double(images);
-% find mean
-meanimage = mean(images, 2); %mean in column DIM
-
-%% for each class, subtract the mean from each image
-%three dimensional matrix
-classmeansubtracted = zeros(row * col, trainsize, SUBJECTS);
-for i=1:SUBJECTS
-    for j=1:trainsize
-        classmeansubtracted(:, j, i) = double(reshape(cell2mat(person(i).faces(j)), [], 1)) - classmean(:,i);
-    end
-end
-%% Compute within class scatter matrix
-
-
-
-
+disp(['  final accuracy % ' num2str(final_correct / final_total * 100)]);
