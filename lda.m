@@ -2,12 +2,13 @@
 clear;
 close all;
 
-load orl_40_occluded_high
-%load person_orl_40
-trainsize = 7;
+%load orl_40
+%load orl_40
+load yale
+trainsize = 9;
 final_correct = 0;
 final_total = 0;
-for iter = 1:5
+for iter = 1:10
     %randomize the images
     for i=1:SUBJECTS
         faces = person(i).faces;
@@ -17,6 +18,7 @@ for iter = 1:5
         person(i).faces = faces(rind);
         afterrand = cell2mat(person(i).faces(1));
     end
+    
     %% start eigenface computation
     %append the images in columns of a matrix A
     images = []; 
@@ -67,11 +69,11 @@ for iter = 1:5
     end
     
     %% compute total, between and within scatter matrices (S, Sb, Sw)
-    A_eigen_space = images_eigen_space - repmat(mean_eigen_space, 1, totaltrain);
-    S = A_eigen_space * A_eigen_space';
-    Sb = zeros(size(S));
-    Sw = zeros(size(S));
-
+    %A_eigen_space = images_eigen_space - repmat(mean_eigen_space, 1, totaltrain);
+    %S = A_eigen_space * A_eigen_space';
+    Sb = zeros(size(size(images_eigen_space, 1), size(images_eigen_space, 1)));
+    Sw = zeros(size(Sb));
+%{
     %between
     for i=1:SUBJECTS
         a = (class_mean_eigen_space(:, i) - mean_eigen_space);
@@ -81,7 +83,7 @@ for iter = 1:5
     %within
     img_index = 0;
     for i=1:SUBJECTS
-        class_sigma = zeros(size(S));
+        class_sigma = zeros(size(Sw));
         for j=1:trainsize
             img_index = img_index + 1;
             a = (images_eigen_space(:, img_index) - class_mean_eigen_space(:, i));
@@ -89,12 +91,27 @@ for iter = 1:5
         end
         Sw = Sw + class_sigma;
     end
-
+%}
+    for i=1:SUBJECTS
+        start_span = (i-1) * trainsize + 1;
+        end_span = start_span + trainsize - 1;
+        size(start_span:end_span)
+        Xi = images_eigen_space(:, start_span : end_span);
+        ni = size(Xi, 2);
+        mi = mean(Xi, 2);
+        %within-class scatter
+        SXi = Xi - repmat(mi, 1, ni);
+        Si{i} = SXi * SXi.'; %% [1] (110)
+        Sw = Sw + Si{i}; %% [1] (109)
+        %between-class scatter
+        SMi = mi - mean_eigen_space;
+        Sb = Sb + ni * SMi * SMi.'; %% [1] (114)
+    end
 
     %% optimization
     %[fisher_vec, fisher_lambda] = eig(Sb\Sw); % Cost function J = inv(Sw) * Sb
     [fisher_vec, fisher_lambda] = eig(Sb, Sw);
-    %[fisher_vec, fisher_lambda] = eig(inv(Sw) * Sb);
+%    [fisher_vec, fisher_lambda] = eig(inv(Sw) * Sb);
     fisher_lambda_values = zeros(1, size(fisher_lambda, 2));
     for i=1:size(fisher_lambda,1)
         fisher_lambda_values(i) = fisher_lambda(i,i);
@@ -115,8 +132,18 @@ for iter = 1:5
     %only take SUBJECTS - 1 fisher vectors
     fisher_faces = fisher_all_faces(:, 1: (SUBJECTS-1) );
 
+    
+    W = fisher_faces' * eigenfacestouse';
     fisher_training_projected  = fisher_faces' * images_eigen_space;
-
+    %{
+    
+    disp('debugging: within distance');
+    norm(fisher_training_projected(:,1) - fisher_training_projected(:,2), 2)
+    disp('debuggin: between distance');
+    norm(fisher_training_projected(:,trainsize) - fisher_training_projected(:,trainsize + 1), 2)
+    pause();
+    %}
+    %fisher_training_projected  = W * A;
     %% Testing
     %required: 
     %mean in original space
@@ -134,17 +161,21 @@ for iter = 1:5
             
             testimvector = reshape(testimdouble, [], 1);
 
-            fisher_im_projected = fisher_faces' * eigenfacestouse' * testimvector; % Test image feature vector
-
+            fisher_im_projected = W * testimvector; % Test image feature vector
+            %fisher_im_projected'
             distanceToTrain = zeros(totaltrain, 1);
             %find distance between this test image and training images
             for k=1:totaltrain
                 distanceToTrain(k) = norm(fisher_training_projected(:,k) - fisher_im_projected, 2);
                 %distanceToTrain(k) = acos(dot(fisher_training_projected(:,k), fisher_im_projected)/ (norm(fisher_training_projected(:,k), 2) * norm(fisher_im_projected, 2)));
             end
-
             [tr index] = sort(distanceToTrain);
+            %disp('distance');
+            %tr'
             idPersonPredicted = floor((index(1) - 1) / trainsize) + 1;
+            %idPersonPredicted = ceil(index(1) / trainsize);
+            %disp(['matched image index ' num2str(index(1))]);
+            %disp(['matched subject id ' num2str(idPersonPredicted)]); 
             if( i == idPersonPredicted)
                 correct = correct + 1;
             end

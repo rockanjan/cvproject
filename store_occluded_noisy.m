@@ -31,6 +31,7 @@ for i=1:size(dir(fullfile(DATADIR)), 1)
                 filename = fullfile(DATADIR, person_dir, files(j).name); 
                 image = imread(filename);
                 %histogram equalize
+                %{
                 [row col] = size(image);
                 %add some occlusion
                 occlusion_percent = 0.4;
@@ -44,6 +45,7 @@ for i=1:size(dir(fullfile(DATADIR)), 1)
                         image(k,l) = 0;
                     end
                 end
+                %}
                 %imshow(image);
                 %pause();
                 %image = imresize(image, [200 200]); row=200; col=200;

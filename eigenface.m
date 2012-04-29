@@ -7,7 +7,7 @@ close all;
 %load yale_histeq
 %load yale_histeq
 %load person_ioe_histeq
-load orl_40_occluded
+load orl_40
 
 FRACTION = .4; %fraction of eigen vectors to use
 remove_first = 0; %remove this number of eigen vectors (lighting variants)
@@ -15,8 +15,9 @@ trainsize = 7;
 final_total = 0;
 final_correct = 0;
 
-for iter = 1:10
+for iter = 1:2
     %randomize the images
+    %{
     for i=1:SUBJECTS
         faces = person(i).faces;
         beforerand = cell2mat(person(i).faces(1));
@@ -32,6 +33,7 @@ for iter = 1:10
         pause()
         %}
     end
+    %}
     %% start eigenface computation
     %append the images in columns of a matrix A
     images = []; 
@@ -134,12 +136,12 @@ for iter = 1:10
                 %distanceToTrain(k) = acos(dot(wtrain(:,k), wtest)/ (norm(wtrain(:,k), 2) * norm(wtest, 2)));
             end
             [tr index] = sort(distanceToTrain);
+            %tr'
             %disp(['matched image ' num2str(index(1))]);
             idPersonPredicted = floor((index(1) - 1) / trainsize) + 1;
             %disp(['matched image id ' num2str(idPersonPredicted)]);
             
             if( i == idPersonPredicted)
-                %disp('error');
                 correct = correct + 1;
             end
             
