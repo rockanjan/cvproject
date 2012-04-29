@@ -3,17 +3,19 @@ clear;
 close all;
 
 %load person_yale_30sub_40images_histeq
-load person_orl_40
+%load yale
 %load yale_histeq
 %load yale_histeq
 %load person_ioe_histeq
+load orl_40_occluded
 
 FRACTION = .4; %fraction of eigen vectors to use
 remove_first = 0; %remove this number of eigen vectors (lighting variants)
-trainsize = 5;
+trainsize = 7;
 final_total = 0;
 final_correct = 0;
-for iter = 1:50
+
+for iter = 1:10
     %randomize the images
     for i=1:SUBJECTS
         faces = person(i).faces;
@@ -129,16 +131,18 @@ for iter = 1:50
             %find distance between this test image and training images
             for k=1:totaltrain
                 distanceToTrain(k) = norm(wtrain(:,k) - wtest, 2);
+                %distanceToTrain(k) = acos(dot(wtrain(:,k), wtest)/ (norm(wtrain(:,k), 2) * norm(wtest, 2)));
             end
             [tr index] = sort(distanceToTrain);
             %disp(['matched image ' num2str(index(1))]);
             idPersonPredicted = floor((index(1) - 1) / trainsize) + 1;
             %disp(['matched image id ' num2str(idPersonPredicted)]);
-
+            
             if( i == idPersonPredicted)
                 %disp('error');
                 correct = correct + 1;
             end
+            
             %{
             %display
             subplot(1,4,1);
@@ -158,6 +162,8 @@ for iter = 1:50
             title('third match');
             %pause();
             %}
+            
+            
         end
     end
     disp(['correct % : ' num2str(correct/testimagenumber * 100)]);

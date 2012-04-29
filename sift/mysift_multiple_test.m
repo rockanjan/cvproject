@@ -5,7 +5,7 @@ function mysift()
     %all variables used here will be available after loading the saved file
     %with descriptors
     %SUBJECTS = 20;
-    load descriptor_ioe
+    load descriptor_yale_20sub_40img
     tic
     figure;
     subplot(1, 2, 1);
@@ -19,14 +19,14 @@ function mysift()
     imshow(cell2mat(person(5).faces(1)) - cell2mat(person(5).faces(5)));
     pause();
     %}
-    distRatio = 0.8;
+    distRatio = 0.6;
     final_overall_correct = 0;
     final_overall_total = 0;
     %for distRatio = 0.2:0.2:0.8
-    for distRatio = 0.8:0.8
+    for distRatio = 0.6:0.6
         final_cv_correct = 0;
         final_cv_total = 0;
-        for folditer = [10]  
+        for folditer = [5]  
             tic
             fold = folditer;
             crossvalidation_correct_count = 0;
@@ -60,9 +60,9 @@ function mysift()
                                 current_train_image = cell2mat(person(x).faces(y));
                                 train_descriptors = person(x).features(y).descriptors;
                                 train_locs = person(x).features(y).locs;
-                                match = computematch(image, current_train_image, descriptors, train_descriptors, locs, train_locs, distRatio);
+                                computed_match = computematch(image, current_train_image, descriptors, train_descriptors, locs, train_locs, distRatio);
                                 train1_count = train1_count + 1;
-                                match_count(x,train1_count) = match;
+                                match_count(x,train1_count) = computed_match;
                             end
                         end
                         match_count;
@@ -72,9 +72,9 @@ function mysift()
                                 current_train_image = cell2mat(person(x).faces(y));
                                 train_descriptors = person(x).features(y).descriptors;
                                 train_locs = person(x).features(y).locs;
-                                match = computematch(image, current_train_image, descriptors, train_descriptors, locs, train_locs, distRatio);
+                                computed_match = computematch(image, current_train_image, descriptors, train_descriptors, locs, train_locs, distRatio);
                                 train2_count = train2_count + 1;
-                                match_count(x,train2_count) = match;
+                                match_count(x,train2_count) = computed_match;
                             end
                         end
                         match_count;
@@ -129,22 +129,32 @@ function mysift()
 end
 
 function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, loc2, distRatio)
+    % 1 = test
+    % 2 = train
+    locationRatio = 0.3;
     [r c] = size(test_image);
     maxdist = sqrt(r^2 + c^2);
     desc2T = desc2';
     for k = 1:size(desc1, 1)
-        %dist = loc1(k)
+       %checking every descriptor of test with train
+       %only do it if location matches
        dotprods = desc1(k,:) * desc2T;
        [vals,indx] = sort(acos(dotprods));  % Take inverse cosine and sort results
        % Check if nearest neighbor has angle less than distRatio times 2nd.
        %vals(1)/vals(2)
-       match(k) = 0;
-       if (vals(1) < distRatio * vals(2))
-          %if distance within some radius, then only match
-          match(k) = indx(1);
+       computed_match(k) = 0;
+       if(length(vals) > 1)
+           if (vals(1) < distRatio * vals(2))
+              %if distance within some radius, then only match
+              computed_match(k) = indx(1);
+           end
        end
     end
-    matches = sum(match > 0);
+    if(size(desc1, 1))
+        matches = sum(computed_match > 0);
+    else
+        matches = 0;
+    end
     % Create a new image showing the two images side by side.
     im3 = appendimages(test_image,train_image);
     
@@ -157,15 +167,15 @@ function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, l
         hold on;
         cols1 = size(test_image,2);
         for i = 1: size(desc1,1)
-          if (match(i) > 0)
-            line([loc1(i,2) loc2(match(i),2)+cols1], ...
-                 [loc1(i,1) loc2(match(i),1)], 'Color', 'g');
+          if (computed_match(i) > 0)
+            line([loc1(i,2) loc2(computed_match(i),2)+cols1], ...
+                 [loc1(i,1) loc2(computed_match(i),1)], 'Color', 'g');
           end
         end
         hold off;
         pause();
         close all;
-        num = sum(match > 0);
+        num = sum(computed_match > 0);
         fprintf('Found %d matches.\n', num);
     end
     %}

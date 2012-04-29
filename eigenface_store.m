@@ -5,8 +5,10 @@ person = struct('faces', {});
 
 %DATADIR = '/temp/cvproject/data/orl';
 %DATADIR = '/temp/lfw_selected';
-DATADIR = '/temp/cvproject/ioepgm';
-
+%DATADIR = '/temp/CroppedYaleSelected';
+DATADIR = '/temp/cvproject/data/orl40';
+%DATADIR = '/temp/cvproject/ioepgm';
+%DATADIR = '/temp/CroppedYaleSelected';
 totaltrain = 0;
 totalall = 0;
 row = 0;
@@ -30,12 +32,14 @@ for i=1:size(dir(fullfile(DATADIR)), 1)
                 image = imread(filename);
                 
                 %histogram equalize
-                [row col] = size(image);
-                image = imresize(image, [200 200]);
-                image = histeq(image);
+                %[row col] = size(image);
+                %image = imresize(image, [200 200]); row=200; col=200;
+                image = imresize(image, [192 168]); row=192; col=168;
+                %image = histeq(image);
                 faces{count} = image;
             end
         end
+        count
         person(total_subjects).faces = faces;
     end
 end
@@ -43,8 +47,8 @@ disp(['row col = ' num2str(row) ' ' num2str(col) ]);
 disp(['total all face images : ' num2str(totalall)]);
 
 SUBJECTS = size(person,2);
-
-save person_ioe_histeq
+image_per_subject = count;
+save orl_40
 
 %verify
 for i=1:SUBJECTS

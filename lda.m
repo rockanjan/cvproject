@@ -2,12 +2,12 @@
 clear;
 close all;
 
-load person_orl_40
+load orl_40_occluded_high
 %load person_orl_40
-trainsize = 5;
+trainsize = 7;
 final_correct = 0;
 final_total = 0;
-for iter = 1:50
+for iter = 1:5
     %randomize the images
     for i=1:SUBJECTS
         faces = person(i).faces;
@@ -92,8 +92,9 @@ for iter = 1:50
 
 
     %% optimization
-%    [fisher_vec, fisher_lambda] = eig(Sb/Sw); % Cost function J = inv(Sw) * Sb
+    %[fisher_vec, fisher_lambda] = eig(Sb\Sw); % Cost function J = inv(Sw) * Sb
     [fisher_vec, fisher_lambda] = eig(Sb, Sw);
+    %[fisher_vec, fisher_lambda] = eig(inv(Sw) * Sb);
     fisher_lambda_values = zeros(1, size(fisher_lambda, 2));
     for i=1:size(fisher_lambda,1)
         fisher_lambda_values(i) = fisher_lambda(i,i);
@@ -139,6 +140,7 @@ for iter = 1:50
             %find distance between this test image and training images
             for k=1:totaltrain
                 distanceToTrain(k) = norm(fisher_training_projected(:,k) - fisher_im_projected, 2);
+                %distanceToTrain(k) = acos(dot(fisher_training_projected(:,k), fisher_im_projected)/ (norm(fisher_training_projected(:,k), 2) * norm(fisher_im_projected, 2)));
             end
 
             [tr index] = sort(distanceToTrain);
@@ -163,7 +165,7 @@ for iter = 1:50
             subplot(1,4,4);
             imshow(thirdmatch);
             title('third match');
-            %pause();
+            pause();
             %}
         end
     end

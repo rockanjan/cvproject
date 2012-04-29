@@ -3,14 +3,16 @@ clear;
 close all;
 
 %load
-%load person_orl_histeq
+
+load person_yale
+%load person_orl_40
 %load person_orl
 %load person_lfw
-load person_ioe_histeq
+%load person_ioe
 
 
 FRACTION = .4; %fraction of eigen vectors to use
-
+remove_first = 0; %remove this number of eigen vectors (lighting variants)
 %% cross validation
 tic
 overall_total_count = 0;
@@ -83,8 +85,8 @@ for folditer = [10]
         %}
         vectorsize = ceil( FRACTION * length(lambda_values) );
         %eigenfacestouse = eigenfaces(:,1:vectorsize);
-        eigenfacestouse = eigenfaces(:,1:vectorsize);
-
+        eigenfacestouse = eigenfaces(:, 1 + remove_first : vectorsize + remove_first);
+        size(eigenfacestouse);
         % plot eigenfaces and mean image
         %{
         figure
@@ -120,7 +122,7 @@ for folditer = [10]
                 testimagenumber = testimagenumber + 1;
                 testim = cell2mat(person(i).faces(j));
                 %imshow(im); pause();
-
+                
                 %subtract mean image
                 testimdouble = double(testim) - reshape(meanimage, row, col);
                 %imshow(uint8(im));
@@ -159,7 +161,7 @@ for folditer = [10]
                     correct = correct + 1;
                 end
                 %display
-                %{
+                
                 subplot(1,4,1);
                 imshow(testim)
                 title('test image');
@@ -175,8 +177,8 @@ for folditer = [10]
                 subplot(1,4,4);
                 imshow(thirdmatch);
                 title('third match');
-                pause();
-                %}
+                %pause();
+                
             end
         end
         disp(['correct percent : ' num2str(correct/testimagenumber * 100)]);

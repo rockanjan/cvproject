@@ -2,9 +2,9 @@ clear
 
 person = struct('faces', {}, 'features', {});
 
-DATADIR = '/temp/cvproject/ioepgm';
+%DATADIR = '/temp/CroppedYaleSelected';
 %DATADIR = '/temp/lfw_selected';
-%DATADIR = '/temp/cvproject/orl';
+DATA_DIR = '/temp/cvproject/data/orl40';
 
 totaltrain = 0;
 totalall = 0;
@@ -12,13 +12,13 @@ totalall = 0;
 keypoints = 0; %for average keyponit
 %read data, store features for all (train/test) images
 
-dir_list = dir(fullfile(DATADIR));
+dir_list = dir(fullfile(DATA_DIR));
 total_subjects = 0;
-for i=1:size(dir(fullfile(DATADIR)), 1)
+for i=1:size(dir(fullfile(DATA_DIR)), 1)
     person_dir = dir_list(i).name
     if( ~ ( strcmp(person_dir, '.') || strcmp(person_dir, '..') ) )
         total_subjects = total_subjects + 1;
-        files =  dir(fullfile(DATADIR, person_dir, '*.pgm'));
+        files =  dir(fullfile(DATA_DIR, person_dir, '*.pgm'));
         features = struct('descriptors', {}, 'locs', {});
         faces = {};
         count = 0;
@@ -26,7 +26,7 @@ for i=1:size(dir(fullfile(DATADIR)), 1)
             if( ~ ( strcmp(files(j).name, '.') || strcmp(files(j).name, '..') || strcmp(files(j).isdir, '1') ) )
                 count = count +1;
                 totalall = totalall + 1;
-                filename = fullfile(DATADIR, person_dir, files(j).name); 
+                filename = fullfile(DATA_DIR, person_dir, files(j).name); 
                 %{
                 %histogram
                 tmpimage = imread(filename);
@@ -54,9 +54,9 @@ disp(['size person' num2str(size(person))]);
 disp(['size person(1).faces ' num2str(size(person(1).faces))]);
 
 SUBJECTS = size(person,2); %number of people
-
+clear DATA_DIR
 %save everything in descriptor file
-save descriptor_ioe
+save orl_40
 %{
 %verify
 for i=1:SUBJECTS
