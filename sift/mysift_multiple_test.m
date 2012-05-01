@@ -5,10 +5,12 @@ function mysift()
     %all variables used here will be available after loading the saved file
     %with descriptors
     %SUBJECTS = 20;
+    %load descriptor_yale_histeq
     load descriptor_yale_20sub_40img
     tic
-    figure;
-    subplot(1, 2, 1);
+    
+    %figure;
+    %subplot(1, 2, 1);
     %{
     figure
     %%almost similar pair of images
@@ -49,9 +51,23 @@ function mysift()
                     for j= test_start : test_end
                         total_count = total_count + 1;
                         %compare test image's descriptors with training images'
+                        
                         image = cell2mat(person(i).faces(j));
+                        
+                        %no occlusion
+                        %{
                         descriptors = person(i).features(j).descriptors;
                         locs = person(i).features(j).locs;
+                        %}
+                        
+                        %occlusion
+                        
+                        image = occlude(image);
+                        imwrite(image, '/tmp/tmp.pgm', 'pgm');
+                        [image, descrips, locations] = sift('/tmp/tmp.pgm');
+                        descriptors = descrips;
+                        locs = locations;
+                        
 
                         match_count = zeros(SUBJECTS, train_size); %storing number of matches for all subjects and all images
                         for x=1:SUBJECTS
@@ -179,4 +195,20 @@ function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, l
         fprintf('Found %d matches.\n', num);
     end
     %}
+end
+
+function [image] = occlude(image)
+    [row col] = size(image);
+    %add some occlusion
+    occlusion_percent = 0.4;
+    occlusion_size = floor(row*occlusion_percent);
+    low=1;
+    high=floor(min(row,col) - occlusion_size);
+    x = floor(low + (high - low) * rand); %position to keep the black dot
+    y = floor(low + (high - low) * rand);
+    for k=x:x+occlusion_size
+        for l=y:y+occlusion_size
+            image(k,l) = 0;
+        end
+    end
 end

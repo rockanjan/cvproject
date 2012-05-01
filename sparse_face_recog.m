@@ -1,16 +1,18 @@
 function sparse_face_recog()
     clear all;
     %load person_yale_30sub_40images_histeq
-    load orl_40
+    %load orl_40
+    load yale
     [row col] = size(cell2mat(person(1).faces(1)));
     %r = 8;
     final_total = 0;
     final_correct = 0;
-    for iter=1:4
-        r=12;
-        c = floor((col/row) * r);
-        disp(['image size : ' num2str(r) 'x' num2str(c)]);
-        trainsize = 8;
+    r=15;
+    c = floor((col/row) * r);
+    disp(['image size : ' num2str(r) 'x' num2str(c)]);
+    trainsize = 35;
+    OCCLUDE = 1;
+    for iter=1:5
         %randomize the images
         for i=1:SUBJECTS
             faces = person(i).faces;
@@ -39,12 +41,17 @@ function sparse_face_recog()
             for j=trainsize+1:image_per_subject
                 %test image
                 y = cell2mat(person(k).faces(j));
-                test_image = occlude(y);
+                if OCCLUDE
+                    y = occlude(y);
+                end
+                test_image = y;
                 y = imresize(y, [r c]);
                 y = y(:);
                 y = double(y);
                 A = double(A);
-
+                %size(A)
+                A = A/(diag(sqrt(diag(A'*A)))); %normalize
+                
                 n = size(A,2);
                 f=ones(2*n,1);
                 Aeq=[A -A];
@@ -94,11 +101,12 @@ function sparse_face_recog()
                 
                 % To display error
                 %{
+                
                 bar(tmp);
                 pause();
                 %}
 
-                
+                %{
                 subplot(1,2,1);
                 imshow(test_image);
                 title(['test image class : ' num2str(k)] );
@@ -111,6 +119,7 @@ function sparse_face_recog()
                     suptitle('error !!!');
                 end
                 pause(3);
+                %}
             end
         end
         final_total = final_total + total;

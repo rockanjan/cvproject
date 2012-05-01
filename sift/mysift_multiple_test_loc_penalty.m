@@ -5,10 +5,10 @@ function mysift()
     %all variables used here will be available after loading the saved file
     %with descriptors
     %SUBJECTS = 20;
-    load descriptor_yale_20sub_40img
+    load descriptor_orl
     tic
-    figure;
-    subplot(1, 2, 1);
+    %figure;
+    %subplot(1, 2, 1);
     %{
     figure
     %%almost similar pair of images

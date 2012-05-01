@@ -2,9 +2,9 @@ clear
 
 person = struct('faces', {}, 'features', {});
 
-%DATADIR = '/temp/CroppedYaleSelected';
-%DATADIR = '/temp/lfw_selected';
-DATA_DIR = '/temp/cvproject/data/orl40';
+DATA_DIR = '/temp/CroppedYaleSelected';
+%DATA_DIR = '/temp/lfw_selected';
+%DATA_DIR = '/temp/cvproject/data/orl40';
 
 totaltrain = 0;
 totalall = 0;
@@ -27,7 +27,7 @@ for i=1:size(dir(fullfile(DATA_DIR)), 1)
                 count = count +1;
                 totalall = totalall + 1;
                 filename = fullfile(DATA_DIR, person_dir, files(j).name); 
-                %{
+                
                 %histogram
                 tmpimage = imread(filename);
                 tmpimage = histeq(tmpimage);
@@ -35,7 +35,7 @@ for i=1:size(dir(fullfile(DATA_DIR)), 1)
                 imwrite(tmpimage, tmpfile, 'pgm');
                 filename=tmpfile;
                 %histogram done
-                %}
+                
                 [image, descrips, locs] = sift(filename);            
                 keypoints = keypoints + size(locs, 1);
                 faces{count} = image;
@@ -56,7 +56,7 @@ disp(['size person(1).faces ' num2str(size(person(1).faces))]);
 SUBJECTS = size(person,2); %number of people
 clear DATA_DIR
 %save everything in descriptor file
-save orl_40
+save descriptor_yale_histeq
 %{
 %verify
 for i=1:SUBJECTS

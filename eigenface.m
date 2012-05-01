@@ -1,3 +1,4 @@
+function eigenface()
 % performs eigenface based recognition
 clear;
 close all;
@@ -7,17 +8,17 @@ close all;
 %load yale_histeq
 %load yale_histeq
 %load person_ioe_histeq
-load orl_40
+load yale
 
 FRACTION = .4; %fraction of eigen vectors to use
 remove_first = 0; %remove this number of eigen vectors (lighting variants)
-trainsize = 7;
+trainsize = 20;
 final_total = 0;
 final_correct = 0;
 
-for iter = 1:2
+for iter = 1:5
     %randomize the images
-    %{
+    
     for i=1:SUBJECTS
         faces = person(i).faces;
         beforerand = cell2mat(person(i).faces(1));
@@ -33,7 +34,7 @@ for iter = 1:2
         pause()
         %}
     end
-    %}
+    
     %% start eigenface computation
     %append the images in columns of a matrix A
     images = []; 
@@ -175,3 +176,19 @@ for iter = 1:2
 end
 close all
 disp(['   final correct % ' num2str(100 * final_correct / final_total) ]);
+end
+function [image] = occlude(image)
+    [row col] = size(image);
+    %add some occlusion
+    occlusion_percent = 0.1;
+    occlusion_size = floor(row*occlusion_percent);
+    low=1;
+    high=floor(min(row,col) - occlusion_size);
+    x = floor(low + (high - low) * rand); %position to keep the black dot
+    y = floor(low + (high - low) * rand);
+    for k=x:x+occlusion_size
+        for l=y:y+occlusion_size
+            image(k,l) = 0;
+        end
+    end
+end

@@ -157,7 +157,7 @@ function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, l
     im3 = appendimages(test_image,train_image);
     
     % Show a figure with lines joining the accepted matches.
-    %{
+    
     if (matches > 0)
         figure('Position', [100 100 size(im3,2) size(im3,1)]);
         colormap('gray');
@@ -176,5 +176,5 @@ function [matches] = computematch(test_image, train_image, desc1, desc2, loc1, l
         num = sum(computed_match > 0);
         fprintf('Found %d matches.\n', num);
     end
-    %}
+    
 end

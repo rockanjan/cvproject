@@ -5,7 +5,7 @@ close all;
 %load orl_40
 %load orl_40
 load yale
-trainsize = 9;
+trainsize = 38;
 final_correct = 0;
 final_total = 0;
 for iter = 1:10
@@ -95,7 +95,7 @@ for iter = 1:10
     for i=1:SUBJECTS
         start_span = (i-1) * trainsize + 1;
         end_span = start_span + trainsize - 1;
-        size(start_span:end_span)
+        %size(start_span:end_span)
         Xi = images_eigen_space(:, start_span : end_span);
         ni = size(Xi, 2);
         mi = mean(Xi, 2);
@@ -119,6 +119,7 @@ for iter = 1:10
     %sort the vectors according to eigenvalues
     [tr index] = sort(fisher_lambda_values, 'descend');
     fisher_all_faces = fisher_vec(:, index);
+    size(fisher_all_faces)
     fisher_lambda_values = fisher_lambda_values(index);
     
     %{
@@ -131,7 +132,7 @@ for iter = 1:10
     
     %only take SUBJECTS - 1 fisher vectors
     fisher_faces = fisher_all_faces(:, 1: (SUBJECTS-1) );
-
+    
     
     W = fisher_faces' * eigenfacestouse';
     fisher_training_projected  = fisher_faces' * images_eigen_space;
