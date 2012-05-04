@@ -4,8 +4,8 @@ close all;
 
 %load orl_40
 %load orl_40
-load yale
-trainsize = 38;
+load lfw_histeq
+trainsize = 8;
 final_correct = 0;
 final_total = 0;
 for iter = 1:10

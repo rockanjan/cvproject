@@ -4,15 +4,15 @@ clear;
 close all;
 
 %load person_yale_30sub_40images_histeq
-%load yale
+load orl_40
 %load yale_histeq
 %load yale_histeq
 %load person_ioe_histeq
-load yale
+%load lfw_histeq
 
 FRACTION = .4; %fraction of eigen vectors to use
 remove_first = 0; %remove this number of eigen vectors (lighting variants)
-trainsize = 20;
+trainsize = 8;
 final_total = 0;
 final_correct = 0;
 
@@ -88,6 +88,7 @@ for iter = 1:5
     
     vectorsize = ceil( FRACTION * length(lambda_values) );
     eigenfacestouse = eigenfaces(:, remove_first+1:vectorsize+remove_first);
+    %eigenfacestouse = eigenfaces(:, 1:39);
 %{
     %% plot eigenfaces and mean image
     figure

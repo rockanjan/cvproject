@@ -7,7 +7,7 @@ function sparse_face_recog()
     %r = 8;
     final_total = 0;
     final_correct = 0;
-    r=15;
+    r=12;
     c = floor((col/row) * r);
     disp(['image size : ' num2str(r) 'x' num2str(c)]);
     trainsize = 35;

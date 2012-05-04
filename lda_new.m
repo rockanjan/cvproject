@@ -5,10 +5,10 @@ function lda_new()
     clear;
     close all;
 
-    load yale_histeq
-    %load orl_40
+    %load yale_histeq
+    load orl_40
     %load person_orl_40
-    trainsize = 20;
+    trainsize = 9;
     final_correct = 0;
     final_total = 0;
     for iter = 1:10
